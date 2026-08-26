@@ -9,6 +9,55 @@ The application provides:
 - Transaction creation and deletion APIs
 - A bill payment demo flow with loading, success, and error states
 
+Repository: https://github.com/Akshaya011/digital-alpha-project
+
+Live backend: https://digital-alpha-project.onrender.com/
+
+Live frontend: not confirmed in this repository. Run the frontend locally or use the URL provided by its hosting project.
+
+More project context is recorded in [ASSUMPTIONS.md](ASSUMPTIONS.md), [DECISIONS.md](DECISIONS.md), and [AI-USAGE.md](AI-USAGE.md).
+
+## Quick Start: Under Five Minutes
+
+You need Python 3.10+, Node.js 18+, npm, and a PostgreSQL database.
+
+1. Clone the repository and enter it:
+
+	```bash
+	git clone https://github.com/Akshaya011/digital-alpha-project.git
+	cd digital-alpha-project
+	```
+
+2. Create `backend/.env` with your PostgreSQL URL:
+
+	```env
+	DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
+	```
+
+3. Create the table, install Python dependencies, and seed the database:
+
+	```bash
+	cd backend
+	set -a; source .env; set +a
+	psql "$DATABASE_URL" -f schema.sql
+	python3 -m venv venv
+	source venv/bin/activate
+	pip install -r requirements.txt
+	python seed.py
+	python app.py
+	```
+
+4. In a second terminal, configure and start the frontend:
+
+	```bash
+	cd "digital alpha project/frontend"
+	printf 'VITE_API_URL=http://localhost:5000\n' > .env
+	npm install
+	npm run dev
+	```
+
+Open the Vite URL, normally http://localhost:5173. The `psql` command requires the PostgreSQL client; hosted PostgreSQL providers commonly provide a copy-paste connection command.
+
 ## Project Structure
 
 ```text
@@ -17,6 +66,7 @@ digital alpha project/
 │   ├── app.py
 │   ├── db.py
 │   ├── requirements.txt
+│   ├── schema.sql
 │   ├── seed.py
 │   ├── transactions.json
 │   └── controllers/transaction_controller.py
@@ -93,19 +143,11 @@ frontend/node_modules/
 frontend/dist/
 ```
 
-Create the table required by `seed.py`:
+Create the table and indexes required by `seed.py` by running the committed schema:
 
-```sql
-CREATE TABLE IF NOT EXISTS transactions (
-		id VARCHAR(50) PRIMARY KEY,
-		timestamp TIMESTAMPTZ NOT NULL,
-		merchant VARCHAR(255) NOT NULL,
-		category VARCHAR(100) NOT NULL,
-		amount NUMERIC(12, 2) NOT NULL,
-		currency VARCHAR(10) NOT NULL,
-		status VARCHAR(30) NOT NULL,
-		payment_method VARCHAR(100) NOT NULL
-);
+```bash
+set -a; source .env; set +a
+psql "$DATABASE_URL" -f schema.sql
 ```
 
 ## 3. Set Up and Seed the Backend
@@ -264,6 +306,37 @@ POST /bill/pay
 ```
 
 This returns a generated payment ID and marks the current demo bill of INR 24,580 as paid for the current frontend session. It is not connected to a real payment provider and is not persisted in the database.
+
+## Delivery Status
+
+### Done
+
+- React dashboard with responsive navigation
+- Spending total, transaction count, and recent transactions
+- PostgreSQL-backed transaction listing
+- Server-side search by merchant or transaction ID
+- Server-side pagination with a 10-number navigation window
+- Transaction create and delete API endpoints
+- Loading, empty, and payment-error UI states
+- Local setup instructions, schema, seed script, and API documentation
+
+### Not Done
+
+- User accounts, login, or authorization
+- Real payment-provider integration
+- Persistent bills or payment history
+- Transaction editing in the UI
+- Frontend production deployment URL in this repository
+- Automated backend or frontend test suite
+
+### Known Issues
+
+- `POST /bill/pay` simulates payment and always returns a generated success response; it does not move money.
+- CORS is currently open with `CORS(app)` and should be restricted to the deployed frontend origin.
+- The bill amount and due date are hard-coded in the Dashboard.
+- The backend does not validate page bounds or all transaction field values before querying/inserting.
+- The frontend has no authentication, so all exposed transaction operations are public.
+- The backend must be started separately from the frontend during local development.
 
 ## Deployment
 
