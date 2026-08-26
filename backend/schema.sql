@@ -30,3 +30,13 @@ CREATE TABLE IF NOT EXISTS reward_redemptions (
 INSERT INTO rewards_account (id, balance)
 VALUES (1, 2450)
 ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS bill_account (
+    id SMALLINT PRIMARY KEY CHECK (id = 1),
+    balance NUMERIC(12, 2) NOT NULL CHECK (balance >= 0),
+    due_date DATE NOT NULL
+);
+
+INSERT INTO bill_account (id, balance, due_date)
+VALUES (1, 24580.00, '2026-09-05')
+ON CONFLICT (id) DO NOTHING;

@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from uuid import uuid4
 
 from flask import Flask, jsonify, request
@@ -42,14 +43,65 @@ def test_db():
         conn.close()
 
 
+@app.get("/bill")
+def get_bill():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("SELECT balance, due_date FROM bill_account WHERE id = 1")
+        balance, due_date = cur.fetchone()
+        return jsonify({
+            "balance": float(balance),
+            "due_date": due_date.isoformat(),
+        }), 200
+    finally:
+        cur.close()
+        conn.close()
+
+
 @app.post("/bill/pay")
 def pay_bill():
-    return {
-        "payment_id": str(uuid4()),
-        "amount": 24580,
-        "status": "PAID",
-        "paid_at": datetime.now(timezone.utc).isoformat()
-    }, 200
+    data = request.get_json(silent=True) or {}
+
+    try:
+        amount = Decimal(str(data.get("amount", ""))).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError):
+        return jsonify({"error": "Enter a valid payment amount"}), 400
+
+    if amount <= 0:
+        return jsonify({"error": "Payment amount must be greater than zero"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("SELECT balance FROM bill_account WHERE id = 1 FOR UPDATE")
+        balance = cur.fetchone()[0]
+
+        if amount > balance:
+            return jsonify({"error": "Payment cannot exceed the remaining bill"}), 400
+
+        remaining = balance - amount
+        cur.execute(
+            "UPDATE bill_account SET balance = %s WHERE id = 1",
+            (remaining,)
+        )
+        conn.commit()
+
+        return jsonify({
+            "payment_id": str(uuid4()),
+            "amount": float(amount),
+            "remaining_balance": float(remaining),
+            "status": "PAID" if remaining == 0 else "PARTIALLY_PAID",
+            "paid_at": datetime.now(timezone.utc).isoformat()
+        }), 200
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
 
 
 REWARDS = {

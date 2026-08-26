@@ -33,8 +33,14 @@ export interface TransactionQuery {
 export interface PaymentResponse {
   payment_id: string;
   amount: number;
-  status: "PAID";
+  remaining_balance: number;
+  status: "PAID" | "PARTIALLY_PAID";
   paid_at: string;
+}
+
+export interface BillResponse {
+  balance: number;
+  due_date: string;
 }
 
 export interface CategorySpending {
@@ -78,8 +84,13 @@ export const getTransaction = async (
   return response.data;
 };
 
-export const payBill = async (): Promise<PaymentResponse> => {
-  const response = await API.post<PaymentResponse>("/bill/pay");
+export const getBill = async (): Promise<BillResponse> => {
+  const response = await API.get<BillResponse>("/bill");
+  return response.data;
+};
+
+export const payBill = async (amount: number): Promise<PaymentResponse> => {
+  const response = await API.post<PaymentResponse>("/bill/pay", { amount });
   return response.data;
 };
 
