@@ -310,7 +310,7 @@ DELETE /transactions/<transaction_id>
 POST /bill/pay
 ```
 
-This returns a generated payment ID and marks the current demo bill of INR 24,580 as paid for the current frontend session. It is not connected to a real payment provider and is not persisted in the database.
+The frontend opens a payment dialog and sends the requested amount. The backend rejects invalid, zero, and over-the-balance amounts, then persists the reduced balance in `bill_account`. It returns `PAID` when the bill reaches zero or `PARTIALLY_PAID` otherwise. This is still a demo: it is not connected to a real payment provider.
 
 ### Get rewards
 
@@ -369,7 +369,7 @@ Returns successful transaction totals grouped by category for the dashboard char
 
 ### Known Issues
 
-- `POST /bill/pay` simulates payment and always returns a generated success response; it does not move money.
+- `POST /bill/pay` records a demo balance reduction, but it does not move real money or use a payment provider.
 - CORS is currently open with `CORS(app)` and should be restricted to the deployed frontend origin.
 - The bill amount and due date are hard-coded in the Dashboard.
 - The backend does not validate page bounds or all transaction field values before querying/inserting.

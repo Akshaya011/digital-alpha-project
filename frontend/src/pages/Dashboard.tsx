@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   getCategorySpending,
+  getBill,
   getTransactions,
   payBill,
   type CategorySpending,
@@ -10,7 +11,10 @@ import {
 function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [billStatus, setBillStatus] = useState<"DUE" | "PAID">("DUE");
+  const [billBalance, setBillBalance] = useState<number | null>(null);
+  const [billDueDate, setBillDueDate] = useState("");
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [showPayment, setShowPayment] = useState(false);
   const [paying, setPaying] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [categorySpending, setCategorySpending] = useState<CategorySpending[]>([]);
@@ -25,24 +29,45 @@ function Dashboard() {
     getCategorySpending().then(setCategorySpending).catch(() => setCategorySpending([]));
   }, []);
 
+  useEffect(() => {
+    getBill()
+      .then((bill) => {
+        setBillBalance(bill.balance);
+        setBillDueDate(bill.due_date);
+      })
+      .catch(() => setPaymentError("Could not load your bill."));
+  }, []);
+
   const totalSpent = transactions.reduce(
     (sum, t) => sum + t.amount,
     0
   );
 
-  const handlePayBill = async () => {
+  const handlePayBill = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const amount = Number(paymentAmount);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setPaymentError("Enter a valid amount greater than zero.");
+      return;
+    }
+
     setPaying(true);
     setPaymentError("");
 
     try {
-      await payBill();
-      setBillStatus("PAID");
+      const response = await payBill(amount);
+      setBillBalance(response.remaining_balance);
+      setPaymentAmount("");
+      setShowPayment(false);
     } catch {
       setPaymentError("Payment failed. Please try again.");
     } finally {
       setPaying(false);
     }
   };
+
+  const billPaid = billBalance === 0;
 
   if (loading) {
     return <p className="text-slate-500">Loading...</p>;
@@ -111,26 +136,95 @@ function Dashboard() {
         </p>
 
         <h2 className="mt-2 text-3xl font-bold">
-          ₹24,580
+          {billBalance === null ? "..." : `₹${billBalance.toLocaleString("en-IN")}`}
         </h2>
 
         <p className="mt-1 text-sm text-slate-400">
-          {billStatus === "PAID" ? "Paid" : "Due September 5"}
+          {billPaid ? "Paid" : `Due ${billDueDate || "September 5"}`}
         </p>
 
         <button
           type="button"
-          onClick={handlePayBill}
-          disabled={paying || billStatus === "PAID"}
+          onClick={() => setShowPayment(true)}
+          disabled={paying || billBalance === null || billPaid}
           className="mt-5 rounded-lg bg-white px-5 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {paying ? "Processing..." : billStatus === "PAID" ? "Paid" : "Pay Bill"}
+          {billPaid ? "Paid" : "Pay Bill"}
         </button>
 
         {paymentError && (
           <p className="mt-3 text-sm text-red-300">{paymentError}</p>
         )}
       </div>
+
+      {showPayment && (
+        <div
+          className="fixed inset-0 z-10 flex items-center justify-center bg-slate-950/50 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setShowPayment(false);
+          }}
+        >
+          <form
+            onSubmit={handlePayBill}
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payment-title"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="payment-title" className="text-xl font-semibold text-slate-900">
+                  Pay your bill
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Remaining: ₹{billBalance?.toLocaleString("en-IN")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPayment(false)}
+                aria-label="Close payment dialog"
+                className="text-2xl leading-none text-slate-400 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+              >
+                ×
+              </button>
+            </div>
+            <label htmlFor="payment-amount" className="mt-6 block text-sm font-medium text-slate-700">
+              Amount to pay
+            </label>
+            <input
+              id="payment-amount"
+              type="number"
+              min="0.01"
+              max={billBalance ?? undefined}
+              step="0.01"
+              value={paymentAmount}
+              onChange={(event) => setPaymentAmount(event.target.value)}
+              placeholder="Enter amount"
+              autoFocus
+              className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 outline-none focus-visible:outline-2 focus-visible:outline-slate-900"
+            />
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPayment(false)}
+                className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-slate-900"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={paying}
+                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+              >
+                {paying ? "Processing..." : "Confirm payment"}
+              </button>
+            </div>
+            {paymentError && <p className="mt-3 text-sm text-red-600">{paymentError}</p>}
+          </form>
+        </div>
+      )}
 
       {/* Recent Transactions */}
       <div className="rounded-xl bg-white shadow-sm">
