@@ -3,6 +3,7 @@ import axios from "axios";
 import {
   getCategorySpending,
   getBill,
+  getRewards,
   getTransactions,
   payBill,
   type CategorySpending,
@@ -19,6 +20,7 @@ function Dashboard() {
   const [paying, setPaying] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [categorySpending, setCategorySpending] = useState<CategorySpending[]>([]);
+  const [rewardBalance, setRewardBalance] = useState<number | null>(null);
 
   useEffect(() => {
     getTransactions()
@@ -37,6 +39,12 @@ function Dashboard() {
         setBillDueDate(bill.due_date);
       })
       .catch(() => setPaymentError("Could not load your bill."));
+  }, []);
+
+  useEffect(() => {
+    getRewards()
+      .then((rewards) => setRewardBalance(rewards.balance))
+      .catch(() => setRewardBalance(null));
   }, []);
 
   const totalSpent = transactions.reduce(
@@ -103,7 +111,7 @@ function Dashboard() {
 
         <Card
           title="Reward Coins"
-          value="2,450 🪙"
+          value={`${rewardBalance === null ? "..." : rewardBalance.toLocaleString()} 🪙`}
         />
       </div>
 
