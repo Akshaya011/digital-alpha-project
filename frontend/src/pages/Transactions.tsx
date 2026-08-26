@@ -5,6 +5,8 @@ function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
 
   const changePage = (page: number) => {
     setTransactions(null);
@@ -12,17 +14,24 @@ function Transactions() {
   };
 
   useEffect(() => {
-    getTransactions(currentPage)
+    getTransactions(currentPage, query)
       .then((response) => {
         setTransactions(response.transactions);
         setTotalPages(response.total_pages);
       })
       .catch(() => setTransactions([]));
-  }, [currentPage]);
+  }, [currentPage, query]);
 
   const loading = transactions === null;
   const firstPage = Math.floor((currentPage - 1) / 10) * 10 + 1;
   const lastPage = Math.min(firstPage + 9, totalPages);
+
+  const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setTransactions(null);
+    setCurrentPage(1);
+    setQuery(search.trim());
+  };
 
   return (
     <div className="space-y-6">
@@ -35,6 +44,23 @@ function Transactions() {
           View your recent spending
         </p>
       </div>
+
+      <form onSubmit={submitSearch} className="flex max-w-xl gap-2">
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search merchant or transaction ID"
+          aria-label="Search transactions"
+          className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-slate-400"
+        />
+        <button
+          type="submit"
+          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+        >
+          Search
+        </button>
+      </form>
 
       {/* Table */}
       <div className="overflow-hidden rounded-xl bg-white shadow-sm">

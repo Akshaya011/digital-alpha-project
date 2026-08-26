@@ -23,10 +23,11 @@ export interface TransactionsResponse {
 }
 
 export const getTransactions = async (
-  page = 1
+  page = 1,
+  search = ""
 ): Promise<TransactionsResponse> => {
   const response = await API.get<TransactionsResponse>("/transactions", {
-    params: { page },
+    params: { page, search },
   });
   return response.data;
 };
