@@ -14,3 +14,19 @@ CREATE INDEX IF NOT EXISTS idx_transactions_timestamp
 
 CREATE INDEX IF NOT EXISTS idx_transactions_merchant
     ON transactions (merchant);
+
+CREATE TABLE IF NOT EXISTS rewards_account (
+    id SMALLINT PRIMARY KEY CHECK (id = 1),
+    balance INTEGER NOT NULL CHECK (balance >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS reward_redemptions (
+    id BIGSERIAL PRIMARY KEY,
+    reward_name VARCHAR(100) NOT NULL,
+    coins INTEGER NOT NULL CHECK (coins > 0),
+    redeemed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO rewards_account (id, balance)
+VALUES (1, 2450)
+ON CONFLICT (id) DO NOTHING;

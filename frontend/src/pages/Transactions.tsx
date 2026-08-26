@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
-import { getTransactions, type Transaction } from "../services/api";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  getTransactions,
+  type Transaction,
+  type TransactionQuery,
+} from "../services/api";
 
 function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
@@ -7,6 +11,10 @@ function Transactions() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<TransactionQuery>({
+    sort: "timestamp",
+    direction: "desc",
+  });
 
   const changePage = (page: number) => {
     setTransactions(null);
@@ -14,23 +22,29 @@ function Transactions() {
   };
 
   useEffect(() => {
-    getTransactions(currentPage, query)
+    getTransactions(currentPage, query, filters)
       .then((response) => {
         setTransactions(response.transactions);
         setTotalPages(response.total_pages);
       })
       .catch(() => setTransactions([]));
-  }, [currentPage, query]);
+  }, [currentPage, query, filters]);
 
   const loading = transactions === null;
   const firstPage = Math.floor((currentPage - 1) / 10) * 10 + 1;
   const lastPage = Math.min(firstPage + 9, totalPages);
 
-  const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setTransactions(null);
     setCurrentPage(1);
     setQuery(search.trim());
+  };
+
+  const updateFilter = (name: keyof TransactionQuery, value: string) => {
+    setTransactions(null);
+    setCurrentPage(1);
+    setFilters((current) => ({ ...current, [name]: value || undefined }));
   };
 
   return (
@@ -45,7 +59,7 @@ function Transactions() {
         </p>
       </div>
 
-      <form onSubmit={submitSearch} className="flex max-w-xl gap-2">
+      <form onSubmit={submitSearch} className="flex flex-wrap gap-2">
         <input
           type="search"
           value={search}
@@ -61,6 +75,59 @@ function Transactions() {
           Search
         </button>
       </form>
+
+      <div className="flex flex-wrap gap-2">
+        <select
+          value={filters.category ?? ""}
+          onChange={(event) => updateFilter("category", event.target.value)}
+          aria-label="Filter by category"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <option value="">All categories</option>
+          {['Food', 'Health', 'Insurance', 'Shopping', 'Travel', 'Utilities'].map((category) => (
+            <option key={category} value={category}>{category}</option>
+          ))}
+        </select>
+        <select
+          value={filters.status ?? ""}
+          onChange={(event) => updateFilter("status", event.target.value)}
+          aria-label="Filter by status"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <option value="">All statuses</option>
+          <option value="SUCCESS">Success</option>
+          <option value="FAILED">Failed</option>
+        </select>
+        <select
+          value={filters.payment_method ?? ""}
+          onChange={(event) => updateFilter("payment_method", event.target.value)}
+          aria-label="Filter by payment method"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <option value="">All payment methods</option>
+          <option value="Credit Card">Credit Card</option>
+          <option value="UPI">UPI</option>
+          <option value="Netbanking">Netbanking</option>
+          <option value="Debit Card">Debit Card</option>
+        </select>
+        <select
+          value={`${filters.sort}-${filters.direction}`}
+          onChange={(event) => {
+            const [sort, direction] = event.target.value.split("-");
+            setTransactions(null);
+            setCurrentPage(1);
+            setFilters({ sort, direction: direction as "asc" | "desc" });
+          }}
+          aria-label="Sort transactions"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <option value="timestamp-desc">Newest first</option>
+          <option value="timestamp-asc">Oldest first</option>
+          <option value="amount-desc">Highest amount</option>
+          <option value="amount-asc">Lowest amount</option>
+          <option value="merchant-asc">Merchant A-Z</option>
+        </select>
+      </div>
 
       {/* Table */}
       <div className="overflow-hidden rounded-xl bg-white shadow-sm">

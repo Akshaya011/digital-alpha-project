@@ -6,6 +6,9 @@ The application provides:
 - A dashboard with spending totals and recent transactions
 - Paginated transaction browsing
 - Search by merchant name or transaction ID
+- Category, status, payment-method filters, and sorting
+- Category spending chart
+- Backend-validated reward redemption
 - Transaction creation and deletion APIs
 - A bill payment demo flow with loading, success, and error states
 
@@ -261,6 +264,8 @@ Query parameters:
 | `category` | empty | Exact category filter |
 | `status` | empty | Exact status filter |
 | `payment_method` | empty | Exact payment method filter |
+| `sort` | `timestamp` | `timestamp`, `amount`, `merchant`, `category`, or `status` |
+| `direction` | `desc` | `asc` or `desc` |
 
 Example response:
 
@@ -307,6 +312,35 @@ POST /bill/pay
 
 This returns a generated payment ID and marks the current demo bill of INR 24,580 as paid for the current frontend session. It is not connected to a real payment provider and is not persisted in the database.
 
+### Get rewards
+
+```http
+GET /rewards
+```
+
+Returns the current coin balance and available rewards.
+
+### Redeem a reward
+
+```http
+POST /rewards/redeem
+Content-Type: application/json
+```
+
+```json
+{"reward_name": "Amazon ₹500 voucher"}
+```
+
+The backend rejects invalid reward names and redemptions that exceed the current balance. Successful redemptions are recorded in `reward_redemptions` and deducted from `rewards_account`.
+
+### Category spending
+
+```http
+GET /analytics/categories
+```
+
+Returns successful transaction totals grouped by category for the dashboard chart.
+
 ## Delivery Status
 
 ### Done
@@ -315,7 +349,10 @@ This returns a generated payment ID and marks the current demo bill of INR 24,58
 - Spending total, transaction count, and recent transactions
 - PostgreSQL-backed transaction listing
 - Server-side search by merchant or transaction ID
+- Server-side filters and sorting for large datasets
 - Server-side pagination with a 10-number navigation window
+- Category spending chart
+- Reward balance and validated redemption flow
 - Transaction create and delete API endpoints
 - Loading, empty, and payment-error UI states
 - Local setup instructions, schema, seed script, and API documentation
@@ -328,6 +365,7 @@ This returns a generated payment ID and marks the current demo bill of INR 24,58
 - Transaction editing in the UI
 - Frontend production deployment URL in this repository
 - Automated backend or frontend test suite
+- Virtualized rendering is not included because only 20 rows are rendered per page
 
 ### Known Issues
 
@@ -335,6 +373,7 @@ This returns a generated payment ID and marks the current demo bill of INR 24,58
 - CORS is currently open with `CORS(app)` and should be restricted to the deployed frontend origin.
 - The bill amount and due date are hard-coded in the Dashboard.
 - The backend does not validate page bounds or all transaction field values before querying/inserting.
+- The chart shows successful spending only.
 - The frontend has no authentication, so all exposed transaction operations are public.
 - The backend must be started separately from the frontend during local development.
 

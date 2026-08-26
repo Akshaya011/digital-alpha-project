@@ -5,6 +5,11 @@ from psycopg2.extras import execute_values
 from db import get_db_connection
 
 
+def setup_schema(cur):
+    with open("schema.sql", "r") as file:
+        cur.execute(file.read())
+
+
 def parse_timestamp(value):
     if isinstance(value, (int, float)):
         return datetime.fromtimestamp(
@@ -61,6 +66,8 @@ for txn in transactions:
 # Connect
 conn = get_db_connection()
 cur = conn.cursor()
+
+setup_schema(cur)
 
 
 # Batch insert

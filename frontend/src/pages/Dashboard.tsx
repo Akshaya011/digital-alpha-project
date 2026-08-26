@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { getTransactions, payBill, type Transaction } from "../services/api";
+import {
+  getCategorySpending,
+  getTransactions,
+  payBill,
+  type CategorySpending,
+  type Transaction,
+} from "../services/api";
 
 function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -7,11 +13,16 @@ function Dashboard() {
   const [billStatus, setBillStatus] = useState<"DUE" | "PAID">("DUE");
   const [paying, setPaying] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  const [categorySpending, setCategorySpending] = useState<CategorySpending[]>([]);
 
   useEffect(() => {
     getTransactions()
       .then((response) => setTransactions(response.transactions))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    getCategorySpending().then(setCategorySpending).catch(() => setCategorySpending([]));
   }, []);
 
   const totalSpent = transactions.reduce(
@@ -65,6 +76,32 @@ function Dashboard() {
           title="Reward Coins"
           value="2,450 🪙"
         />
+      </div>
+
+      <div className="rounded-xl bg-white p-6 shadow-sm">
+        <h2 className="font-semibold text-slate-900">Spending by category</h2>
+        <div className="mt-5 space-y-4">
+          {categorySpending.map((item) => {
+            const maximum = categorySpending[0]?.amount || 1;
+            return (
+              <div key={item.category}>
+                <div className="mb-1 flex justify-between text-sm">
+                  <span className="text-slate-600">{item.category}</span>
+                  <span className="font-medium">₹{item.amount.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="h-2 rounded-full bg-slate-100">
+                  <div
+                    className="h-2 rounded-full bg-emerald-500"
+                    style={{ width: `${(item.amount / maximum) * 100}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+          {categorySpending.length === 0 && (
+            <p className="text-sm text-slate-500">No spending data available.</p>
+          )}
+        </div>
       </div>
 
       {/* Credit Card Bill */}

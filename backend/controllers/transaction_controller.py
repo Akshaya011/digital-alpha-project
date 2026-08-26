@@ -20,6 +20,15 @@ def get_transactions():
         category = request.args.get("category", "")
         status = request.args.get("status", "")
         payment = request.args.get("payment_method", "")
+        sort = request.args.get("sort", "timestamp")
+        direction = request.args.get("direction", "desc").lower()
+
+        if sort not in {"timestamp", "amount", "merchant", "category", "status"}:
+            sort = "timestamp"
+        if direction not in {"asc", "desc"}:
+            direction = "desc"
+
+        order = f"{sort} {direction.upper()}"
 
         conditions = []
         params = []
@@ -58,7 +67,7 @@ def get_transactions():
                    amount, currency, status, payment_method
             FROM transactions
             {where}
-            ORDER BY timestamp DESC
+            ORDER BY {order}
             LIMIT %s OFFSET %s
             """,
             params + [limit, offset]
@@ -90,6 +99,28 @@ def get_transactions():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    finally:
+        cur.close()
+        conn.close()
+
+
+@transaction_bp.route("/analytics/categories", methods=["GET"])
+def get_category_spending():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT category, SUM(amount)::float
+            FROM transactions
+            WHERE status = 'SUCCESS'
+            GROUP BY category
+            ORDER BY SUM(amount) DESC
+        """)
+        return jsonify([
+            {"category": row[0], "amount": row[1]}
+            for row in cur.fetchall()
+        ]), 200
     finally:
         cur.close()
         conn.close()
