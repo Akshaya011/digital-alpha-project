@@ -1,4 +1,6 @@
 import os
+from datetime import datetime, timezone
+from uuid import uuid4
 
 from flask import Flask
 from flask_cors import CORS
@@ -38,6 +40,16 @@ def test_db():
     finally:
         cur.close()
         conn.close()
+
+
+@app.post("/bill/pay")
+def pay_bill():
+    return {
+        "payment_id": str(uuid4()),
+        "amount": 24580,
+        "status": "PAID",
+        "paid_at": datetime.now(timezone.utc).isoformat()
+    }, 200
 
 
 if __name__ == "__main__":

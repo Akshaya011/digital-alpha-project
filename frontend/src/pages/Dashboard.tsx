@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { getTransactions,type Transaction } from "../services/api";
+import { getTransactions, payBill, type Transaction } from "../services/api";
 
 function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [billStatus, setBillStatus] = useState<"DUE" | "PAID">("DUE");
+  const [paying, setPaying] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
 
   useEffect(() => {
     getTransactions()
@@ -15,6 +18,20 @@ function Dashboard() {
     (sum, t) => sum + t.amount,
     0
   );
+
+  const handlePayBill = async () => {
+    setPaying(true);
+    setPaymentError("");
+
+    try {
+      await payBill();
+      setBillStatus("PAID");
+    } catch {
+      setPaymentError("Payment failed. Please try again.");
+    } finally {
+      setPaying(false);
+    }
+  };
 
   if (loading) {
     return <p className="text-slate-500">Loading...</p>;
@@ -61,12 +78,21 @@ function Dashboard() {
         </h2>
 
         <p className="mt-1 text-sm text-slate-400">
-          Due September 5
+          {billStatus === "PAID" ? "Paid" : "Due September 5"}
         </p>
 
-        <button className="mt-5 rounded-lg bg-white px-5 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100">
-          Pay Bill
+        <button
+          type="button"
+          onClick={handlePayBill}
+          disabled={paying || billStatus === "PAID"}
+          className="mt-5 rounded-lg bg-white px-5 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {paying ? "Processing..." : billStatus === "PAID" ? "Paid" : "Pay Bill"}
         </button>
+
+        {paymentError && (
+          <p className="mt-3 text-sm text-red-300">{paymentError}</p>
+        )}
       </div>
 
       {/* Recent Transactions */}

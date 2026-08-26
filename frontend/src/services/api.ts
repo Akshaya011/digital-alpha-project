@@ -22,6 +22,13 @@ export interface TransactionsResponse {
   total_pages: number;
 }
 
+export interface PaymentResponse {
+  payment_id: string;
+  amount: number;
+  status: "PAID";
+  paid_at: string;
+}
+
 export const getTransactions = async (
   page = 1,
   search = ""
@@ -36,6 +43,11 @@ export const getTransaction = async (
   id: string
 ): Promise<Transaction> => {
   const response = await API.get<Transaction>(`/transactions/${id}`);
+  return response.data;
+};
+
+export const payBill = async (): Promise<PaymentResponse> => {
+  const response = await API.post<PaymentResponse>("/bill/pay");
   return response.data;
 };
 
