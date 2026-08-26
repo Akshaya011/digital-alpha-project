@@ -10,7 +10,7 @@ app = Flask(__name__)
 # CORS
 frontend_url = os.getenv(
     "FRONTEND_URL",
-    "http://localhost:5173"
+    "http://localhost:5173","https://frontend-35am4c5q7-akshays-projects-7ccd7aed.vercel.app/"
 )
 
 CORS(app, origins=[frontend_url])
