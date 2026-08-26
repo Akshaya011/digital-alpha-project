@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
 });
 
 export interface Transaction {
@@ -15,8 +15,19 @@ export interface Transaction {
   payment_method: string;
 }
 
-export const getTransactions = async (): Promise<Transaction[]> => {
-  const response = await API.get<Transaction[]>("/transactions");
+export interface TransactionsResponse {
+  transactions: Transaction[];
+  total: number;
+  page: number;
+  total_pages: number;
+}
+
+export const getTransactions = async (
+  page = 1
+): Promise<TransactionsResponse> => {
+  const response = await API.get<TransactionsResponse>("/transactions", {
+    params: { page },
+  });
   return response.data;
 };
 

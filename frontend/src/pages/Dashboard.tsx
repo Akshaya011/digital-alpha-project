@@ -7,7 +7,7 @@ function Dashboard() {
 
   useEffect(() => {
     getTransactions()
-      .then(setTransactions)
+      .then((response) => setTransactions(response.transactions))
       .finally(() => setLoading(false));
   }, []);
 
@@ -15,10 +15,6 @@ function Dashboard() {
     (sum, t) => sum + t.amount,
     0
   );
-
-  const successful = transactions.filter(
-    (t) => t.status === "SUCCESS"
-  ).length;
 
   if (loading) {
     return <p className="text-slate-500">Loading...</p>;
