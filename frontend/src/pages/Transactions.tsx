@@ -11,6 +11,7 @@ function Transactions() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [filters, setFilters] = useState<TransactionQuery>({
     sort: "timestamp",
     direction: "desc",
@@ -46,6 +47,15 @@ function Transactions() {
     setCurrentPage(1);
     setFilters((current) => ({ ...current, [name]: value || undefined }));
   };
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedTransaction(null);
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -156,7 +166,16 @@ function Transactions() {
                 {transactions.map((t) => (
                   <tr
                     key={t.id}
-                    className="hover:bg-slate-50"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedTransaction(t)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedTransaction(t);
+                      }
+                    }}
+                    className="cursor-pointer hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-slate-900"
                   >
                     <td className="p-4 font-medium">
                       {t.merchant}
@@ -238,6 +257,61 @@ function Transactions() {
           </nav>
         )}
       </div>
+
+      {selectedTransaction && (
+        <div
+          className="fixed inset-0 z-20 flex items-center justify-center bg-slate-950/50 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSelectedTransaction(null);
+          }}
+        >
+          <article
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="transaction-detail-title"
+            className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-4 border-b pb-4">
+              <div>
+                <p className="text-sm text-slate-500">Transaction details</p>
+                <h2 id="transaction-detail-title" className="mt-1 text-2xl font-semibold text-slate-900">
+                  {selectedTransaction.merchant}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTransaction(null)}
+                aria-label="Close transaction details"
+                className="text-2xl leading-none text-slate-400 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="grid gap-4 py-5 sm:grid-cols-2">
+              <Detail label="Transaction ID" value={selectedTransaction.id} />
+              <Detail label="Amount" value={`₹${selectedTransaction.amount.toLocaleString("en-IN")}`} />
+              <Detail label="Category" value={selectedTransaction.category} />
+              <Detail label="Payment method" value={selectedTransaction.payment_method} />
+              <Detail label="Status" value={selectedTransaction.status} />
+              <Detail
+                label="Date"
+                value={new Date(selectedTransaction.timestamp).toLocaleString("en-IN")}
+              />
+            </div>
+          </article>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-1 wrap-break-word text-sm font-medium text-slate-900">{value}</p>
     </div>
   );
 }
