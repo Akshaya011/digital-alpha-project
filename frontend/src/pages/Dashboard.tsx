@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import axios from "axios";
 import {
   getCategorySpending,
   getBill,
@@ -60,8 +61,11 @@ function Dashboard() {
       setBillBalance(response.remaining_balance);
       setPaymentAmount("");
       setShowPayment(false);
-    } catch {
-      setPaymentError("Payment failed. Please try again.");
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.error
+        : "Payment failed. Please try again.";
+      setPaymentError(message || "Payment failed. Please try again.");
     } finally {
       setPaying(false);
     }

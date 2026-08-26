@@ -22,6 +22,21 @@ CORS(app)
 app.register_blueprint(transaction_bp)
 
 
+def ensure_bill_account(cur):
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS bill_account (
+            id SMALLINT PRIMARY KEY CHECK (id = 1),
+            balance NUMERIC(12, 2) NOT NULL CHECK (balance >= 0),
+            due_date DATE NOT NULL
+        )
+    """)
+    cur.execute("""
+        INSERT INTO bill_account (id, balance, due_date)
+        VALUES (1, 24580.00, '2026-09-05')
+        ON CONFLICT (id) DO NOTHING
+    """)
+
+
 @app.route("/")
 def home():
     return {"message": "Backend is running"}
@@ -49,6 +64,8 @@ def get_bill():
     cur = conn.cursor()
 
     try:
+        ensure_bill_account(cur)
+        conn.commit()
         cur.execute("SELECT balance, due_date FROM bill_account WHERE id = 1")
         balance, due_date = cur.fetchone()
         return jsonify({
@@ -76,6 +93,7 @@ def pay_bill():
     cur = conn.cursor()
 
     try:
+        ensure_bill_account(cur)
         cur.execute("SELECT balance FROM bill_account WHERE id = 1 FOR UPDATE")
         balance = cur.fetchone()[0]
 
