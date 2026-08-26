@@ -8,12 +8,12 @@ from controllers.transaction_controller import transaction_bp
 app = Flask(__name__)
 
 # CORS
-frontend_url = os.getenv(
-    "FRONTEND_URL",
-    "http://localhost:5173","https://frontend-35am4c5q7-akshays-projects-7ccd7aed.vercel.app/"
-)
+# frontend_url = os.getenv(
+#     "FRONTEND_URL",
+#     "http://localhost:5173","https://frontend-35am4c5q7-akshays-projects-7ccd7aed.vercel.app/"
+# )
 
-CORS(app, origins=[frontend_url])
+CORS(app)
 
 # Register routes
 app.register_blueprint(transaction_bp)
