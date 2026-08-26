@@ -15,15 +15,40 @@ export interface Transaction {
   payment_method: string;
 }
 
-export const getTransactions = async (): Promise<Transaction[]> => {
-  const response = await API.get<Transaction[]>("/transactions");
+interface TransactionResponse {
+  transactions: Transaction[];
+  total: number;
+  page: number;
+  total_pages: number;
+}
+
+export const getTransactions = async (
+  page = 1,
+  search = "",
+  category = "",
+  status = "",
+  payment_method = ""
+): Promise<TransactionResponse> => {
+  const response = await API.get<TransactionResponse>("/transactions", {
+    params: {
+      page,
+      search,
+      category,
+      status,
+      payment_method,
+    },
+  });
+
   return response.data;
 };
 
 export const getTransaction = async (
   id: string
 ): Promise<Transaction> => {
-  const response = await API.get<Transaction>(`/transactions/${id}`);
+  const response = await API.get<Transaction>(
+    `/transactions/${id}`
+  );
+
   return response.data;
 };
 
