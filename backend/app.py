@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask_cors import CORS
 from db import get_db_connection
@@ -5,9 +7,15 @@ from controllers.transaction_controller import transaction_bp
 
 app = Flask(__name__)
 
-# Allow Vite frontend
-CORS(app, origins=["http://localhost:5173"])
+# CORS
+frontend_url = os.getenv(
+    "FRONTEND_URL",
+    "http://localhost:5173"
+)
 
+CORS(app, origins=[frontend_url])
+
+# Register routes
 app.register_blueprint(transaction_bp)
 
 
